@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 
 function Signup() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ function Signup() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-2xl">
-            📚
+            ≡ƒôÜ
           </div>
 
           <h1 className="mt-4 text-3xl font-bold">
@@ -120,7 +120,7 @@ function Signup() {
             to="/"
             className="mt-5 block text-center text-sm text-indigo-400 hover:text-indigo-300"
           >
-            ← Back to Landing Page
+            ΓåÉ Back to Landing Page
           </Link>
 
         </div>
