@@ -1,11 +1,15 @@
+
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const ATLAS_URI =
-      "mongodb+srv://2024rishililani_db_user:e5YEzRSpwKMwpbgj@librarymanagementdb.h6zogr3.mongodb.net/?appName=LibraryManagementDB";
+    const MONGO_URI = process.env.MONGO_URI;
 
-    await mongoose.connect(ATLAS_URI, {
+    if (!MONGO_URI) {
+      throw new Error("MONGO_URI is missing in environment variables");
+    }
+
+    await mongoose.connect(MONGO_URI, {
       dbName: "library_management",
     });
 

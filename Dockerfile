@@ -1,16 +1,19 @@
-FROM node:18-alpine
+
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Dependencies install karne ke liye package files copy karo
-COPY package*.json ./
+# Copy backend package files
+COPY server/package*.json ./
+
+# Install backend dependencies
 RUN npm install
 
-# Poora application code copy karo
-COPY . .
+# Copy backend application
+COPY server/ ./
 
-# Ports expose karo (Frontend aur Backend dono ke liye)
-EXPOSE 5173 5000
+# Render backend port
+EXPOSE 5000
 
-# App start karne ki command
-CMD ["npm", "run", "dev"]
+# Start Express backend
+CMD ["node", "server.js"]
