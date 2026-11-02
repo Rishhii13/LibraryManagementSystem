@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -19,25 +20,41 @@ const { protect, authorize } = require("./middleware/authMiddleware");
 const app = express();
 const server = http.createServer(app);
 
+// Allowed frontend addresses
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://library-management-system-eight-gamma.vercel.app",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests without an Origin header (e.g. health checks)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(helmet());
+
+// Apply CORS before routes and handle preflight requests
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
+// Socket.IO configuration
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
 
-// Make Socket.IO available to API routes if needed later.
+// Make Socket.IO available to API routes
 app.set("io", io);
-
-app.use(helmet());
-
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -52,13 +69,16 @@ const apiLimiter = rateLimit({
 app.use("/api/", apiLimiter);
 app.use(express.json({ limit: "10kb" }));
 
+// Connect MongoDB
 connectDB();
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/sms", smsRoutes);
 
+// Protected route
 app.get("/api/protected", protect, (req, res) => {
   return res.status(200).json({
     message: "Access granted. You are authenticated.",
@@ -70,6 +90,7 @@ app.get("/api/protected", protect, (req, res) => {
   });
 });
 
+// Admin test route
 app.get(
   "/api/admin-test",
   protect,
@@ -86,12 +107,14 @@ app.get(
   }
 );
 
+// Backend health check
 app.get("/", (req, res) => {
   return res.status(200).json({
     message: "Library Management System API is running",
   });
 });
 
+// Error handler
 app.use((err, req, res, next) => {
   if (err.type === "entity.too.large") {
     return res.status(413).json({
@@ -112,8 +135,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ================= SOCKET.IO =================
-
+// Socket.IO events
 io.on("connection", (socket) => {
   console.log("WebSocket client connected:", socket.id);
 
@@ -126,11 +148,10 @@ io.on("connection", (socket) => {
   });
 });
 
-// ================= START SERVER =================
-
+// Start server
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   console.log("Socket.IO real-time server is ready.");
 });

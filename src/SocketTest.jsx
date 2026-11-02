@@ -7,7 +7,7 @@ const SocketTest = () => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    const socket = io("http://localhost:5000", {
+    const socket = io("https://librarymanagementsystem-2-yja2.onrender.com", {
       transports: ["websocket", "polling"],
     });
 

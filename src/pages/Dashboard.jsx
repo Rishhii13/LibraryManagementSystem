@@ -1,9 +1,11 @@
+
 import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { LibraryContext } from "../context/LibraryContext";
 
-const BOOKS_API = "http://localhost:5000/api/books";
-const MEMBERS_API = "http://localhost:5000/api/members/active/count";
+const API_BASE_URL = "https://librarymanagementsystem-2-yja2.onrender.com";
+const BOOKS_API = `${API_BASE_URL}/api/books`;
+const MEMBERS_API = `${API_BASE_URL}/api/members/active/count`;
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -26,7 +28,6 @@ function Dashboard() {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState("");
 
-  // Fetch books from the protected API
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -42,7 +43,7 @@ function Dashboard() {
         }
 
         if (!response.ok) {
-          throw new Error("Failed to fetch books");
+          throw new Error("Failed to fetch books.");
         }
 
         const data = await response.json();
@@ -51,12 +52,12 @@ function Dashboard() {
           Array.isArray(data)
             ? data
             : Array.isArray(data.books)
-            ? data.books
-            : []
+              ? data.books
+              : []
         );
       } catch (error) {
         console.error("Dashboard books error:", error);
-        setBooksError(error.message || "Unable to load book data");
+        setBooksError(error.message || "Unable to load book data.");
       } finally {
         setLoadingBooks(false);
       }
@@ -65,7 +66,6 @@ function Dashboard() {
     fetchBooks();
   }, []);
 
-  // Fetch active members from the protected API
   useEffect(() => {
     const fetchActiveMembers = async () => {
       try {
@@ -81,14 +81,14 @@ function Dashboard() {
         }
 
         if (!response.ok) {
-          throw new Error("Failed to fetch active members");
+          throw new Error("Failed to fetch active members.");
         }
 
         const data = await response.json();
         setActiveMembers(Number(data.count || 0));
       } catch (error) {
         console.error("Dashboard members error:", error);
-        setMembersError(error.message || "Unable to load member data");
+        setMembersError(error.message || "Unable to load member data.");
       } finally {
         setLoadingMembers(false);
       }
@@ -97,7 +97,6 @@ function Dashboard() {
     fetchActiveMembers();
   }, []);
 
-  // Calculate book statistics
   const totalBooks = books.length;
 
   const totalCopies = books.reduce(
@@ -117,7 +116,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-30 h-screen w-64 border-r border-slate-800 bg-slate-900 transition-transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -186,13 +184,11 @@ function Dashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main
         className={`transition-all duration-300 ${
           sidebarOpen ? "ml-64" : "ml-0"
         }`}
       >
-        {/* Topbar */}
         <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 backdrop-blur">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -222,7 +218,6 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* Dashboard */}
         <div className="p-6 lg:p-8">
           <div className="mb-8">
             <p className="text-sm text-indigo-400">Librarian Dashboard</p>
@@ -236,20 +231,17 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* Statistics */}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Books"
-              value={
-                loadingBooks ? "..." : booksError ? "—" : totalBooks
-              }
+              value={loadingBooks ? "..." : booksError ? "—" : totalBooks}
               icon="📚"
               subtitle={
                 loadingBooks
                   ? "Loading from database..."
                   : booksError
-                  ? "Database unavailable"
-                  : `${totalCopies} total copies`
+                    ? "Database unavailable"
+                    : `${totalCopies} total copies`
               }
             />
 
@@ -259,16 +251,16 @@ function Dashboard() {
                 loadingMembers
                   ? "..."
                   : membersError
-                  ? "—"
-                  : activeMembers
+                    ? "—"
+                    : activeMembers
               }
               icon="👥"
               subtitle={
                 loadingMembers
                   ? "Loading from database..."
                   : membersError
-                  ? "Database unavailable"
-                  : "Currently active members"
+                    ? "Database unavailable"
+                    : "Currently active members"
               }
             />
 
@@ -292,7 +284,6 @@ function Dashboard() {
             />
           </div>
 
-          {/* Database Status */}
           <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -307,15 +298,15 @@ function Dashboard() {
                   booksError
                     ? "bg-red-500/10 text-red-400"
                     : loadingBooks
-                    ? "bg-yellow-500/10 text-yellow-400"
-                    : "bg-green-500/10 text-green-400"
+                      ? "bg-yellow-500/10 text-yellow-400"
+                      : "bg-green-500/10 text-green-400"
                 }`}
               >
                 {booksError
                   ? "● Database Error"
                   : loadingBooks
-                  ? "● Loading..."
-                  : "● Connected"}
+                    ? "● Loading..."
+                    : "● Connected"}
               </div>
             </div>
 
@@ -343,7 +334,6 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="mt-8">
             <h3 className="mb-4 text-lg font-bold">Quick Actions</h3>
 

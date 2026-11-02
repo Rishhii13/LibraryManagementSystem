@@ -1,5 +1,9 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+
+const API_URL =
+  "https://librarymanagementsystem-2-yja2.onrender.com/api/auth/login";
 
 function Login() {
   const navigate = useNavigate();
@@ -16,39 +20,32 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         setError(data.message || "Invalid email or password.");
-        setLoading(false);
         return;
       }
 
-      // Save JWT token
       localStorage.setItem("token", data.token);
-
-      // Save logged-in user details
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Go to dashboard only after successful authentication
       navigate("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       setError(
-        "Unable to connect to the server. Make sure the backend is running."
+        "Unable to connect to the backend. Please try again."
       );
     } finally {
       setLoading(false);
@@ -57,10 +54,7 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-
       <div className="w-full max-w-md">
-
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-2xl">
             📚
@@ -75,12 +69,8 @@ function Login() {
           </p>
         </div>
 
-        {/* Login Card */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
-
           <form onSubmit={handleLogin}>
-
-            {/* Email */}
             <label className="text-sm font-medium text-slate-300">
               Email Address
             </label>
@@ -94,7 +84,6 @@ function Login() {
               className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
             />
 
-            {/* Password */}
             <label className="mt-5 block text-sm font-medium text-slate-300">
               Password
             </label>
@@ -108,14 +97,12 @@ function Login() {
               className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
             />
 
-            {/* Error Message */}
             {error && (
               <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
@@ -123,7 +110,6 @@ function Login() {
             >
               {loading ? "Logging in..." : "Login to Dashboard"}
             </button>
-
           </form>
 
           <div className="my-6 border-t border-slate-800" />
@@ -145,11 +131,8 @@ function Login() {
           >
             ← Back to Landing Page
           </Link>
-
         </div>
-
       </div>
-
     </div>
   );
 }
