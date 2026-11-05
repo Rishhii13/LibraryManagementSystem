@@ -14,6 +14,7 @@ const bookRoutes = require("./routes/bookRoutes");
 const authRoutes = require("./routes/authRoutes");
 const memberRoutes = require("./routes/memberRoutes");
 const smsRoutes = require("./routes/smsRoutes");
+const borrowRoutes = require("./routes/borrowRoutes");
 
 const { protect, authorize } = require("./middleware/authMiddleware");
 
@@ -26,36 +27,36 @@ const allowedOrigins = [
   "https://library-management-system-eight-gamma.vercel.app",
 ];
 
+// CORS configuration
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests without an Origin header (e.g. health checks)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests without an Origin header
+    if (!origin) {
       return callback(null, true);
     }
 
-    return callback(new Error("Not allowed by CORS"));
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked CORS origin:", origin);
+
+    return callback(new Error("Origin not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 204,
 };
 
-app.use(helmet());
-
-// Apply CORS before routes and handle preflight requests
+// Apply CORS before other middleware and routes
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 
-// Socket.IO configuration
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-  },
-});
+// Security middleware
+app.use(helmet());
 
-// Make Socket.IO available to API routes
-app.set("io", io);
-
+// Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -67,7 +68,21 @@ const apiLimiter = rateLimit({
 });
 
 app.use("/api/", apiLimiter);
+
+// Parse JSON requests
 app.use(express.json({ limit: "10kb" }));
+
+// Socket.IO configuration
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Make Socket.IO available to API routes
+app.set("io", io);
 
 // Connect MongoDB
 connectDB();
@@ -77,6 +92,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/sms", smsRoutes);
+app.use("/api/borrowings", borrowRoutes);
 
 // Protected route
 app.get("/api/protected", protect, (req, res) => {
