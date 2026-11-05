@@ -1,47 +1,34 @@
 
 const express = require("express");
-const twilio = require("twilio");
-
-const {
-  protect,
-  authorize,
-} = require("../middleware/authMiddleware");
+const nodemailer = require("nodemailer");
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-/* ================= TWILIO CONFIG ================= */
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
-// Initialize Twilio only when credentials are configured
-const client =
-  accountSid && authToken
-    ? twilio(accountSid, authToken)
-    : null;
-
-/* ================= TEST ROUTE ================= */
-
-// Authenticated users can check the SMS API
+// Test whether the email API is working.
 router.get("/test", protect, (req, res) => {
   return res.status(200).json({
-    message: "SMS API is working",
+    message: "Email notification API is working.",
   });
 });
 
-/* ================= SEND SMS ================= */
-
-// Only librarians and admins can send SMS
+// Send a real email.
 router.post(
   "/send",
   protect,
   authorize("librarian", "admin"),
   async (req, res) => {
     try {
-      const { to, message } = req.body;
+      const { to, message, subject } = req.body;
 
-      // Validate required fields
       if (
         typeof to !== "string" ||
         typeof message !== "string" ||
@@ -50,64 +37,57 @@ router.post(
       ) {
         return res.status(400).json({
           success: false,
-          message: "Valid phone number and message are required.",
+          message: "Recipient email and message are required.",
         });
       }
 
-      // Check Twilio configuration
-      if (!client || !twilioPhoneNumber) {
+      const email = to.trim();
+
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailPattern.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid recipient email address.",
+        });
+      }
+
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         return res.status(503).json({
           success: false,
-          message: "SMS service is not configured.",
+          message: "Gmail is not configured. Check EMAIL_USER and EMAIL_PASS.",
         });
       }
 
-      // Basic phone number format validation
-      const phoneNumber = to.trim();
-
-      if (!/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Enter the phone number in international format, for example +919876543210.",
-        });
-      }
-
-      // Avoid sending empty or excessively long messages
-      const smsMessage = message.trim();
-
-      if (smsMessage.length > 1500) {
-        return res.status(400).json({
-          success: false,
-          message: "Message is too long. Please shorten it.",
-        });
-      }
-
-      // Send SMS through Twilio
-      const sms = await client.messages.create({
-        body: smsMessage,
-        from: twilioPhoneNumber,
-        to: phoneNumber,
+      const info = await transporter.sendMail({
+        from: `"LibManage Library" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: subject?.trim() || "Library Notification - LibManage",
+        text: message.trim(),
       });
 
-      console.log("SMS request processed:", {
-        userId: req.user.id,
-        status: sms.status,
-      });
+      console.log("Email sent:", info.messageId);
+
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("email-sent", {
+          recipient: email,
+          messageId: info.messageId,
+          status: "sent",
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        message: "SMS request submitted successfully.",
-        sid: sms.sid,
-        status: sms.status,
+        message: "Email sent successfully.",
+        messageId: info.messageId,
       });
     } catch (error) {
-      // Keep sensitive provider details in server logs only
-      console.error("SMS sending failed:", error.message);
+      console.error("Email sending failed:", error.message);
 
       return res.status(500).json({
         success: false,
-        message: "Failed to send SMS. Please check the number and SMS configuration.",
+        message: "Email could not be sent. Please check Gmail configuration.",
       });
     }
   }
